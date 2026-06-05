@@ -2,100 +2,30 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Tic Tac Classroom</title>
+<title>Tic Tac Classroom Debug</title>
 </head>
 <body>
-<div id="app"></div>
-<script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-const supabase=createClient("nmwziqovwfvdrixqnnoa.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5td3ppcW92d2Z2ZHJpeHFubm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NTc1NjgsImV4cCI6MjA5NjIzMzU2OH0.3XFSAHGkXbOXNC-OqTBRvaj68XsCL7pXRXhSYCNjUkc");
-let room=null;
-let role=null;
-let board=Array(9).fill(null);
-let annotations=[];
-function log(msg){document.getElementById("app").innerText+=msg+"\n";}
+<div id="app">Loading...</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script>
+const app=document.getElementById("app");
+function log(t){app.innerText+="\n"+t;}
+window.onerror=function(msg){app.innerText="JS ERROR:\n"+msg;}
+log("Script started");
+if(!window.supabase){log("Supabase library NOT loaded");}
+const supabaseClient=supabase.createClient("nmwziqovwfvdrixqnnoa.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5td3ppcW92d2Z2ZHJpeHFubm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NTc1NjgsImV4cCI6MjA5NjIzMzU2OH0.3XFSAHGkXbOXNC-OqTBRvaj68XsCL7pXRXhSYCNjUkc");
+log("Supabase client created");
 async function createRoom(){
+try{
 let code=Math.random().toString(36).substring(2,7);
-let {data}=await supabase.from("rooms").insert({code,teacher_id:"teacher"}).select().single();
-room=data;role="X";
+let res=await supabaseClient.from("rooms").insert({code,teacher_id:"teacher"}).select().single();
+if(res.error){log("Insert error: "+JSON.stringify(res.error));return;}
 log("Room created: "+code);
-}
-async function joinRoom(code){
-let {data}=await supabase.from("rooms").select().eq("code",code).single();
-room=data;role="O";
-log("Joined room");
-subscribe();
-}
-async function loadBoard(){
-let {data}=await supabase.from("board_state").select().eq("room_id",room.id);
-board=Array(9).fill(null);
-data.forEach(c=>board[c.cell_index]=c.value);
-render();
-}
-async function move(i){
-if(!room.game_active)return;
-if(board[i])return;
-board[i]=room.current_turn;
-await supabase.from("board_state").insert({room_id:room.id,cell_index:i,value:room.current_turn});
-await supabase.from("moves").insert({room_id:room.id,cell_index:i,player:room.current_turn});
-await switchTurn();
-checkWin();
-}
-async function switchTurn(){
-let next=room.current_turn==="X"?"O":"X";
-await supabase.from("rooms").update({current_turn:next}).eq("id",room.id);
-room.current_turn=next;
-}
-function checkWin(){
-let w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-for(let p of ["X","O"]){
-for(let c of w){
-if(c.every(i=>board[i]===p)){
-log(p+" wins!");
-room.game_active=false;
-supabase.from("rooms").update({game_active:false}).eq("id",room.id);
-}
-}
-}
-}
-function render(){
-let html="<div style='display:grid;grid-template-columns:repeat(3,100px)'>";
-board.forEach((v,i)=>{
-html+=`<div data-i='${i}' style='width:100px;height:100px;border:1px solid black;display:flex;align-items:center;justify-content:center;font-size:30px'>${v||""}</div>`;
-});
-html+="</div>";
-document.getElementById("app").innerHTML=html;
-document.querySelectorAll("[data-i]").forEach(e=>{
-e.onclick=()=>move(parseInt(e.dataset.i));
-e.oncontextmenu=(ev)=>{
-ev.preventDefault();
-toggleHighlight(parseInt(e.dataset.i));
-};
-});
-}
-async function toggleHighlight(i){
-let existing=annotations.find(a=>a.type==="highlight"&&a.cell===i);
-if(existing){
-await supabase.from("annotations").delete().eq("id",existing.id);
-}else{
-await supabase.from("annotations").insert({room_id:room.id,type:"highlight",cell:i,color:"red"});
-}
-subscribe();
-}
-function subscribe(){
-supabase.channel("room-"+room.id)
-.on("postgres_changes",{event:"*",schema:"public",table:"board_state"},loadBoard)
-.on("postgres_changes",{event:"*",schema:"public",table:"annotations"},loadAnnotations)
-.subscribe();
-}
-async function loadAnnotations(){
-let {data}=await supabase.from("annotations").select().eq("room_id",room.id);
-annotations=data;
+}catch(e){log("Exception: "+e.message);}
 }
 window.createRoom=createRoom;
-window.joinRoom=joinRoom;
-render();
-log("Use createRoom() or joinRoom('code')");
+log("Ready. Run createRoom() from JS (we will add buttons next)");
+app.innerHTML+="\n<button onclick='createRoom()'>Create Room</button>";
 </script>
 </body>
 </html>
