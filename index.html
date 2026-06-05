@@ -1,31 +1,28 @@
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<title>Tic Tac Classroom Debug</title>
-</head>
 <body>
-<div id="app">Loading...</div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<div id="app">START</div>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
 const app=document.getElementById("app");
 function log(t){app.innerText+="\n"+t;}
-window.onerror=function(msg){app.innerText="JS ERROR:\n"+msg;}
-log("Script started");
-if(!window.supabase){log("Supabase library NOT loaded");}
-const supabaseClient=supabase.createClient("nmwziqovwfvdrixqnnoa.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5td3ppcW92d2Z2ZHJpeHFubm9hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2NTc1NjgsImV4cCI6MjA5NjIzMzU2OH0.3XFSAHGkXbOXNC-OqTBRvaj68XsCL7pXRXhSYCNjUkc");
-log("Supabase client created");
-async function createRoom(){
-try{
-let code=Math.random().toString(36).substring(2,7);
-let res=await supabaseClient.from("rooms").insert({code,teacher_id:"teacher"}).select().single();
-if(res.error){log("Insert error: "+JSON.stringify(res.error));return;}
-log("Room created: "+code);
-}catch(e){log("Exception: "+e.message);}
+window.onerror=(m,s,l,c)=>log("ERROR:"+m+" "+l+":"+c);
+
+log("1 loaded script");
+
+if(!window.supabase){
+log("SUPABASE MISSING");
+}else{
+log("SUPABASE OK");
 }
-window.createRoom=createRoom;
-log("Ready. Run createRoom() from JS (we will add buttons next)");
-app.innerHTML+="\n<button onclick='createRoom()'>Create Room</button>";
+
+const client=supabase.createClient(
+"https://nmwziqovwfvdrixqnnoa.supabase.co",
+"YOUR_KEY"
+);
+
+log("CLIENT CREATED");
+
 </script>
 </body>
 </html>
